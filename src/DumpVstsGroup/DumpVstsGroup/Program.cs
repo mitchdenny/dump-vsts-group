@@ -1,6 +1,7 @@
 ﻿using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.Framework.Client;
 using Microsoft.TeamFoundation.Framework.Common;
+using Microsoft.TeamFoundation.Git.Client;
 using Microsoft.TeamFoundation.Server;
 using System;
 using System.Collections.Generic;
@@ -22,24 +23,31 @@ namespace DumpVstsGroup
 
         public static void Main(string[] args)
         {
-            var collectionUri = GetInput("Project Collection URI", "http://midenn.visualstudio.com");
+            var collectionUri = GetInput("Project Collection URI", "https://microsoft.visualstudio.com");
             var group = GetInput("Group", "Team Foundation Administrators");
+            Console.WriteLine();
 
-            var collection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(new Uri("https://midenn.visualstudio.com"));
+            var collection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(new Uri(collectionUri));
 
             var identityService = collection.GetService<IIdentityManagementService>();
-            var pcaGroup = identityService.ReadIdentity(IdentitySearchFactor.DisplayName, group, MembershipQuery.Direct, ReadIdentityOptions.ExtendedProperties);
-            var pcaMembers = identityService.ReadIdentities(pcaGroup.Members, MembershipQuery.None, ReadIdentityOptions.ExtendedProperties);
 
-            foreach (var pcaMember in pcaMembers)
+            var listOfGroupsMatchingInput = identityService.ReadIdentities(IdentitySearchFactor.DisplayName, new[] { group }, MembershipQuery.Direct, ReadIdentityOptions.None);
+
+            foreach (var groupIdentity in listOfGroupsMatchingInput[0])
             {
-                var schemaClassName = (string)pcaMember.GetProperty("SchemaClassName");
+                Console.WriteLine($"Group: {groupIdentity.DisplayName} ({groupIdentity.TeamFoundationId})");
 
-                if (schemaClassName == "User")
+                var listOfMembersInGroup = identityService.ReadIdentities(groupIdentity.Members, MembershipQuery.None, ReadIdentityOptions.None);
+
+                foreach (var memberIdentity in listOfMembersInGroup)
                 {
-                    var account = pcaMember.GetProperty("Account");
-                    Console.WriteLine($"\"{pcaMember.TeamFoundationId}\",\"{pcaMember.DisplayName}\",\"{account}\"");
+                    if ((string)memberIdentity.GetProperty("SchemaClassName") == "User")
+                    {
+                        Console.WriteLine($"\t{memberIdentity.DisplayName} ({memberIdentity.GetProperty("Account")}");
+                    }
                 }
+
+                Console.WriteLine();
             }
         }
     }
