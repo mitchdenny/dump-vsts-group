@@ -35,7 +35,7 @@ namespace DumpVstsGroup
 
             foreach (var groupIdentity in listOfGroupsMatchingInput[0])
             {
-                Console.WriteLine($"Group: {groupIdentity.DisplayName} ({groupIdentity.TeamFoundationId})");
+                Console.WriteLine($"{groupIdentity.GetProperty("SpecialType")} Group: {groupIdentity.DisplayName} ({groupIdentity.TeamFoundationId})");
 
                 var listOfMembersInGroup = identityService.ReadIdentities(groupIdentity.Members, MembershipQuery.None, ReadIdentityOptions.None);
 
